@@ -264,13 +264,13 @@ with tab1:
             chain = prompt_template | llm | StrOutputParser()
             answer = chain.invoke({"context": context_str, "question": query_to_run})
             
-            # Automatically generate 2 short follow-up questions based on context and answer
+            # FIXED: Pass the context along with question and answer to generate deeply contextual follow-ups
             fu_prompt = ChatPromptTemplate.from_messages([
-                ("system", "Given the user's question and the assistant's answer, generate exactly 2 short, distinct follow-up questions that drill deeper into the topic. Return them separated by a newline, with no extra text or numbering."),
-                ("human", "Question: {q}\nAnswer: {a}")
+                ("system", "Given the retrieved regulatory context, user question, and assistant answer, generate exactly 2 short, distinct follow-up questions that drill deeper into specific safety protocols or regulations found in the text. Return them separated by a newline, with no extra text or numbering."),
+                ("human", "Context:\n{context}\n\nQuestion: {q}\nAnswer: {a}")
             ])
             fu_chain = fu_prompt | llm | StrOutputParser()
-            fu_raw = fu_chain.invoke({"q": query_to_run, "a": answer})
+            fu_raw = fu_chain.invoke({"context": context_str, "q": query_to_run, "a": answer})
             st.session_state.dynamic_follow_ups = [line.strip() for line in fu_raw.split("\n") if line.strip()][:2]
             
         with st.chat_message("assistant"):
