@@ -7,7 +7,16 @@ A production-grade RAG application designed to query dense technical safety hand
 - **Retrieval Engine:** Hybrid Search combining ChromaDB dense vector embeddings (`text-embedding-3-small`) and BM25 keyword matching, unified via Reciprocal Rank Fusion (RRF).
 - **Generation:** GPT-4o-mini with strict source grounding and citation tracking.
 
+**Home Page**
+![alt text](/images/MinesafePilotHome.png)
 
+**Prompt and Response**
+![alt text](/images/MinesafePilotPrompt.png)
+
+**Corpus**
+![alt text](/images/MinesafeCorpus.png)
+
+**Evals**
 ![alt text](/images/image.png)
 
 ## Quickstart
