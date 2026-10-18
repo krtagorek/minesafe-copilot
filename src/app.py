@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import base64
 from dotenv import load_dotenv
+import streamlit.components.v1 as components
 
 load_dotenv()
 
@@ -45,10 +46,34 @@ bg_style = f"""
 st.markdown(f"""
     <style>
     {bg_style}
+    
     /* Global Crisp Text Contrast */
     h1, h2, h3, h4, h5, h6, p, span, label, div {{
         color: #f8fafc !important;
     }}
+    
+    /* FIX: Target Streamlit Chat Input Outer Container & BaseWeb Wrapper */
+    [data-testid="stChatInput"] {{
+        background-color: transparent !important;
+    }}
+    [data-testid="stChatInput"] [data-baseweb="base-input"] {{
+        background-color: #0b1120 !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+    }}
+    
+    /* FIX: Force Typed Prompt Text to Pure White */
+    [data-testid="stChatInput"] textarea {{
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        background-color: transparent !important;
+    }}
+    
+    [data-testid="stChatInput"] textarea::placeholder {{
+        color: #94a3b8 !important;
+        -webkit-text-fill-color: #94a3b8 !important;
+    }}
+
     .main-header {{
         background: rgba(15, 23, 42, 0.90);
         backdrop-filter: blur(12px);
@@ -140,6 +165,74 @@ st.markdown(f"""
         background-color: #334155;
         border-color: #facc15;
         color: #facc15;
+    }}
+    .assistant-input-shell {{
+        background: rgba(11, 17, 32, 0.92);
+        border: 1px solid #334155;
+        border-radius: 14px;
+        padding: 0.85rem 0.9rem 0.75rem 0.9rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        position: fixed;
+        left: 1.5rem;
+        right: 1.5rem;
+        bottom: 1rem;
+        z-index: 9999;
+    }}
+    .block-container {{
+        padding-bottom: 8rem;
+    }}
+    .assistant-input-shell .stTextInput,
+    .assistant-input-shell [data-baseweb="input"],
+    .assistant-input-shell [data-baseweb="input"] input {{
+        background-color: transparent !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+    }}
+    .assistant-input-shell .stTextInput input {{
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        border: 1px solid #475569 !important;
+        border-radius: 12px !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }}
+    .assistant-input-shell .stTextInput input::placeholder {{
+        color: #cbd5e1 !important;
+    }}
+    .assistant-input-shell .stButton > button,
+    .assistant-input-shell button[kind="secondary"] {{
+        width: 100% !important;
+        height: 3.15rem !important;
+        min-width: 3.15rem !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: #facc15 !important;
+        color: #0f172a !important;
+        border: 1px solid #facc15 !important;
+        border-radius: 12px !important;
+        font-size: 1.25rem !important;
+        font-weight: 800 !important;
+        box-shadow: none !important;
+        background-image: none !important;
+        text-shadow: none !important;
+        outline: none !important;
+        line-height: 1 !important;
+    }}
+    .assistant-input-shell .stButton > button:hover,
+    .assistant-input-shell button[kind="secondary"]:hover,
+    .assistant-input-shell .stButton > button:active,
+    .assistant-input-shell button[kind="secondary"]:active,
+    .assistant-input-shell .stButton > button:focus,
+    .assistant-input-shell button[kind="secondary"]:focus {{
+        background: #fde047 !important;
+        color: #0f172a !important;
+        border-color: #fde047 !important;
+        box-shadow: none !important;
+        background-image: none !important;
+        outline: none !important;
     }}
     </style>
     <div class="main-header">
@@ -240,9 +333,23 @@ with tab1:
                                 st.session_state.selected_prompt = fu_text
                                 st.rerun()
 
-    # User input handling (chat input or sidebar/dynamic chip)
-    user_input = st.chat_input("Ask a safety or compliance question...")
-    query_to_run = user_input if user_input else st.session_state.selected_prompt
+    # User input handling (custom row for exact alignment)
+    with st.container():
+        st.markdown('<div class="assistant-input-shell">', unsafe_allow_html=True)
+        input_col, button_col = st.columns([16, 1], vertical_alignment="bottom")
+        with input_col:
+            user_input = st.text_input(
+                "Ask a safety or compliance question...",
+                label_visibility="collapsed",
+                placeholder="Ask a safety or compliance question...",
+                key="assistant_query_input",
+            )
+        with button_col:
+            submitted = st.button("↑", key="assistant_send_button", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div id="assistant-input-anchor"></div>', unsafe_allow_html=True)
+
+    query_to_run = user_input if submitted and user_input else st.session_state.selected_prompt
 
     if st.session_state.selected_prompt:
         st.session_state.selected_prompt = None
@@ -264,7 +371,7 @@ with tab1:
             chain = prompt_template | llm | StrOutputParser()
             answer = chain.invoke({"context": context_str, "question": query_to_run})
             
-            # FIXED: Pass the context along with question and answer to generate deeply contextual follow-ups
+            # Pass context, question, and answer to generate deeply contextual follow-ups
             fu_prompt = ChatPromptTemplate.from_messages([
                 ("system", "Given the retrieved regulatory context, user question, and assistant answer, generate exactly 2 short, distinct follow-up questions that drill deeper into specific safety protocols or regulations found in the text. Return them separated by a newline, with no extra text or numbering."),
                 ("human", "Context:\n{context}\n\nQuestion: {q}\nAnswer: {a}")
@@ -289,6 +396,22 @@ with tab1:
         })
         
         st.rerun()
+
+    components.html(
+        """
+        <script>
+          setTimeout(() => {
+            const anchor = window.parent.document.getElementById('assistant-input-anchor');
+            if (anchor) {
+              anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            } else {
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+          }, 50);
+        </script>
+        """,
+        height=0,
+    )
 
 with tab2:
     st.subheader("Indexed Regulatory Source Documents")
