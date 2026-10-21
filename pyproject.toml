@@ -1,0 +1,27 @@
+[project]
+name = "minesafe-copilot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "chromadb>=1.5.9",
+    "langchain>=1.4.6",
+    "langchain-community>=0.4.2",
+    "langgraph>=1.2.15",
+    "langchain-openai>=0.3.35",
+    "openai>=3.31.0",
+    "python-dotenv>=1.1.1",
+    "pymupdf>=1.28.2",
+    "rank-bm25>=0.2.2",
+    "streamlit>=1.66.0",
+    "langchain-chroma>=1.1.0",
+    "numpy>=2.4.6",
+]
+
+[project.scripts]
+minesafe-copilot = "minesafe_copilot:main"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"

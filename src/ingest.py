@@ -29,7 +29,7 @@ def get_chunked_documents(docs: list[Document]) -> list[Document]:
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     return splitter.split_documents(docs)
 
-def get_or_create_chunks(raw_dir: str = "data/raw", cache_path: str = "data/processed_chunks.pkl") -> list[Document]:
+def get_or_create_chunks(raw_dir: str = "data/raw", cache_path: str = "data/processed/processed_chunks.pkl") -> list[Document]:
     if os.path.exists(cache_path):
         print("Loading pre-chunked documents from cache...")
         with open(cache_path, "rb") as f:

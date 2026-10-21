@@ -12,6 +12,6 @@ wheels/
 # Environment files
 .env
 data/
-data/
-data/
-data/
+
+# macOS metadata
+.DS_Store

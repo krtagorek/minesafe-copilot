@@ -9,7 +9,7 @@ from typing import List
 
 
 class HybridRetriever:
-    def __init__(self, chunks: List[Document], persist_directory: str = "data/chroma_db"):
+    def __init__(self, chunks: List[Document], persist_directory: str = "data/processed/chroma_db"):
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         
         # Initialize Chroma Vector Store
