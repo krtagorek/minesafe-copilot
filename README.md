@@ -1,6 +1,6 @@
 # Enterprise Safety & Compliance Copilot (Week 2 RAG Project)
 
-A production-grade RAG application for querying dense technical safety handbooks and compliance guidelines with source citations.
+A Week 2 RAG prototype for querying technical safety handbooks and compliance guidelines using hybrid retrieval and AI-generated answers.
 
 ## What It Uses
 - Python 3.11+
@@ -15,10 +15,29 @@ Enterprise Safety & Compliance Copilot is built as a grounded RAG system with fo
 
 - **Corpus ingestion** — verified PDF handbooks are loaded from `data/raw/`, cleaned, and split into manageable chunks before indexing.
 - **Hybrid retrieval** — ChromaDB provides dense semantic search while BM25 handles exact keyword and citation matching; the two are merged with Reciprocal Rank Fusion.
-- **Generation guardrails** — OpenAI generates answers from retrieved context only, with a low-temperature prompt designed to keep responses concise and source-bound.
+- **Generation guardrails** — OpenAI is prompted to answer using retrieved context and cite the handbook source. Evidence checks and source/page labels in the answer context remain planned improvements.
 - **Evaluation and follow-up UX** — the app includes evaluation workflows for retrieval quality and answer faithfulness, plus UI support for guided follow-up questions.
 
 In practice, this means the app is optimized for compliance lookups, citation-heavy questions, and safety guidance where exact wording matters.
+
+## Active Implementation Settings
+
+- **PDF loading:** `PyMuPDFLoader`.
+- **Text cleaning:** replace newlines with spaces and trim surrounding whitespace. Headers, footers, and page numbers are not explicitly removed.
+- **Chunking:** `RecursiveCharacterTextSplitter` with `chunk_size=1000` and `chunk_overlap=200`. These values are measured in characters, not tokens.
+- **Embeddings:** OpenAI `text-embedding-3-small`, with no explicit dimensions override.
+- **Retrieval:** Chroma and BM25 each retrieve up to five chunks. Reciprocal Rank Fusion combines their rankings and returns up to five chunks.
+- **Answer generation:** `gpt-4o-mini` with `temperature=0.1`.
+
+The active chunking and embedding settings are defined directly in `src/ingest.py` and `src/retriever.py`. The chunking constants in `src/config.py` are not used by the current application path.
+
+## Current Limitations
+
+The answer prompt receives retrieved chunk text without explicit source filename or page labels. Source filenames are displayed separately in the UI.
+
+Answer generation currently runs even when retrieval returns no evidence. The application also has no explicit relevance check that blocks unsupported answers.
+
+Planned improvements are to pass source and page labels into the answer context and return an unsupported response when evidence is empty or irrelevant. The current prompt requests context-based answers, but this behavior is not guaranteed.
 
 ## Screenshots
 **Home Page**
@@ -75,13 +94,16 @@ uv run python scripts/download_data.py
   - https://www.msha.gov/sites/default/files/Directive%20%26%20Guidance/Handbooks/PH26-V-1%20Electrical%20Inspection%20Procedures%20Handbook%208_12_2026.pdf
 
 ## Build the Local Index
-After the PDFs are in place, run the app once or run the ingestion step so the local chunk cache and Chroma store are created.
+After the PDFs are in place, start the app:
+```bash
+uv run streamlit run src/app.py
+```
 
-The app will create these artifacts automatically on first run:
-- `data/processed/processed_chunks.pkl`
-- `data/processed/chroma_db/`
+On first run, the app creates:
+- `data/processed/processed_chunks.pkl` — the processed chunk cache.
+- `data/processed/chroma_db/` — the Chroma vector index.
 
-If you want to rebuild from scratch, delete `data/processed/processed_chunks.pkl` and `data/processed/chroma_db/` first.
+After changing source PDFs, chunking settings, or the embedding model, stop the app, delete both the chunk cache file and the Chroma directory listed above, then restart the app to rebuild them.
 
 ## Run the App
 Start the Streamlit UI with:
@@ -98,7 +120,7 @@ Ask questions like:
 ## Troubleshooting
 - **Missing API key**: confirm `OPENAI_API_KEY` is set in `.env`.
 - **No documents found**: confirm the PDFs are inside `data/raw/` and have `.pdf` extensions.
-- **Empty or stale answers**: delete `data/processed/processed_chunks.pkl` and `data/processed/chroma_db/`, then rerun ingestion.
+- **Stale index**: delete `data/processed/processed_chunks.pkl` and `data/processed/chroma_db/`, then rerun ingestion.
 - **Import errors**: rerun `uv sync` to make sure dependencies are installed.
 
 ## Notes
