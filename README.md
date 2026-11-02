@@ -120,7 +120,7 @@ Ask questions like:
 ## Troubleshooting
 - **Missing API key**: confirm `OPENAI_API_KEY` is set in `.env`.
 - **No documents found**: confirm the PDFs are inside `data/raw/` and have `.pdf` extensions.
-- **Stale index**: delete `data/processed/processed_chunks.pkl` and `data/processed/chroma_db/`, then rerun ingestion.
+- **Stale index**: stop the app, delete `data/processed/processed_chunks.pkl` and the `data/processed/chroma_db/` directory, then restart the app to rebuild both.
 - **Import errors**: rerun `uv sync` to make sure dependencies are installed.
 
 ## Notes
