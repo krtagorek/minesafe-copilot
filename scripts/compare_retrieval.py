@@ -38,13 +38,18 @@ def print_results(title, documents):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("question", help="Question to compare across retrieval methods")
+    parser.add_argument(
+        "--index-directory", type=Path, default=INDEX_PATH,
+        help="Saved Chroma directory to compare (queried through a temporary copy)",
+    )
     args = parser.parse_args()
+    index_path = args.index_directory.resolve()
     if not args.question.strip():
         parser.error("question must not be blank")
 
     # Check saved artifacts before importing retrieval code or creating clients.
     missing = [
-        path for path in (CHUNKS_PATH, INDEX_PATH / "chroma.sqlite3")
+        path for path in (CHUNKS_PATH, index_path / "chroma.sqlite3")
         if not path.is_file()
     ]
     if missing:
@@ -69,10 +74,10 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="minesafe-retrieval-") as scratch:
         snapshot = Path(scratch) / "chroma_db"
-        shutil.copytree(INDEX_PATH, snapshot)
+        shutil.copytree(index_path, snapshot)
         # Include committed WAL data using SQLite's backup API; source is read-only.
         with sqlite3.connect(
-            (INDEX_PATH / "chroma.sqlite3").as_uri() + "?mode=ro", uri=True
+            (index_path / "chroma.sqlite3").as_uri() + "?mode=ro", uri=True
         ) as source, sqlite3.connect(snapshot / "chroma.sqlite3") as target:
             source.backup(target)
 
@@ -94,6 +99,7 @@ def main():
             client=client,
             collection_name=COLLECTION,
             embedding_function=OpenAIEmbeddings(model="text-embedding-3-small"),
+            create_collection_if_not_exists=False,
         )
         print(f"Question: {args.question}")
         print(f"Saved chunks: {len(chunks)} | Indexed records: {collection.count()}")
