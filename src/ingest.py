@@ -5,6 +5,18 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+def load_saved_chunks(cache_path: str = "data/processed/processed_chunks.pkl") -> list[Document]:
+    if not Path(cache_path).is_file():
+        raise FileNotFoundError(
+            "Saved chunks are missing. Build explicitly with: "
+            "uv run python scripts/build_index.py"
+        )
+    with open(cache_path, "rb") as handle:
+        chunks = pickle.load(handle)
+    if not chunks:
+        raise ValueError("Saved chunks are empty. Run scripts/build_index.py explicitly.")
+    return chunks
+
 def load_and_clean_pdfs(raw_dir: str = "data/raw") -> list[Document]:
     docs = []
     raw_path = Path(raw_dir)

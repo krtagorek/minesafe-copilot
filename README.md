@@ -94,16 +94,16 @@ uv run python scripts/download_data.py
   - https://www.msha.gov/sites/default/files/Directive%20%26%20Guidance/Handbooks/PH26-V-1%20Electrical%20Inspection%20Procedures%20Handbook%208_12_2026.pdf
 
 ## Build the Local Index
-After the PDFs are in place, start the app:
+After the PDFs are in place, explicitly build the index (this makes embedding API calls):
 ```bash
-uv run streamlit run src/app.py
+uv run python scripts/build_index.py
 ```
 
-On first run, the app creates:
+The build command creates:
 - `data/processed/processed_chunks.pkl` — the processed chunk cache.
 - `data/processed/chroma_db/` — the Chroma vector index.
 
-After changing source PDFs, chunking settings, or the embedding model, stop the app, delete both the chunk cache file and the Chroma directory listed above, then restart the app to rebuild them.
+Normal app startup only loads saved chunks and the existing collection; missing data produces an explicit build instruction. Repeating the build with the same chunks uses deterministic IDs and does not add records. It does not remove legacy records or stale documents. To create a separate index for inspection, use `--persist-directory /tmp/minesafe-new-index`. Changes to PDFs or chunking require a deliberately refreshed chunk cache; changing embeddings requires a separate index.
 
 ## Run the App
 Start the Streamlit UI with:
@@ -120,7 +120,7 @@ Ask questions like:
 ## Troubleshooting
 - **Missing API key**: confirm `OPENAI_API_KEY` is set in `.env`.
 - **No documents found**: confirm the PDFs are inside `data/raw/` and have `.pdf` extensions.
-- **Stale index**: stop the app, delete `data/processed/processed_chunks.pkl` and the `data/processed/chroma_db/` directory, then restart the app to rebuild both.
+- **Missing index or chunks**: run `uv run python scripts/build_index.py` explicitly; startup never ingests documents. Existing legacy duplicates are not removed by this change.
 - **Import errors**: rerun `uv sync` to make sure dependencies are installed.
 
 ## Notes

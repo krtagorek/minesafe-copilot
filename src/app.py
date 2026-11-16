@@ -6,7 +6,7 @@ import streamlit.components.v1 as components
 
 load_dotenv()
 
-from ingest import get_or_create_chunks
+from ingest import load_saved_chunks
 from retriever import HybridRetriever
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -248,12 +248,16 @@ st.markdown(f"""
 
 @st.cache_resource
 def initialize_system():
-    chunks = get_or_create_chunks()
+    chunks = load_saved_chunks()
     retriever = HybridRetriever(chunks)
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
     return retriever, llm
 
-retriever, llm = initialize_system()
+try:
+    retriever, llm = initialize_system()
+except (FileNotFoundError, ValueError, RuntimeError) as error:
+    st.error(str(error))
+    st.stop()
 
 # Sidebar Telemetry & Status
 st.sidebar.success("🟢 System Status: Operational")
@@ -431,7 +435,7 @@ with tab2:
     
     if st.button("Load Sample Chunks from Vector Store"):
         with st.spinner("Accessing vector store index..."):
-            chunks = get_or_create_chunks()
+            chunks = load_saved_chunks()
             for i in range(min(3, len(chunks))):
                 st.markdown(f"**Sample Chunk {i+1}** | *Source:* `{chunks[i].metadata.get('source_file')}`")
                 st.text(chunks[i].page_content[:400] + "...")
